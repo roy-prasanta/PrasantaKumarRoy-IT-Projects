@@ -1,0 +1,65 @@
+# WSUS Patch Management Lab on Azure
+
+## 📌 Overview
+This project demonstrates the setup and configuration of **Windows Server Update Services (WSUS)** in an Azure lab environment for centralized patch management.
+
+## 🏗️ Lab Architecture
+- **Domain Controller (DC)** – Windows Server 2022
+- **WSUS Role Installed** – on same DC for lab purposes
+- **Client VM** – Windows 11 Enterprise, domain-joined
+- **Azure Environment** – Free-tier subscription
+
+---
+
+## ⚙️ Steps Performed
+
+1. **Provisioned Azure VMs**
+   - Domain Controller + WSUS server (`SCCM-VM`)
+   - Client VM (`VM1`) in same VNet
+
+2. **Configured AD DS & DNS**
+   - Domain: `india.com`
+   - Created GPO for WSUS
+
+3. **Installed WSUS Role**
+   - Role installed via Server Manager
+   - Configured WSUS to use **port 8530**
+   - Configured classifications & product updates
+
+4. **Group Policy Configuration**
+   - Configured `Specify intranet Microsoft update service location`
+   - Pointed clients to `http://SCCM-VM:8530`
+
+5. **Firewall Rules**
+   - Allowed **TCP 8530 inbound** in Azure NSG and Windows Firewall
+
+6. **Client Testing**
+   - Verified WSUS registry keys under:
+     ```
+     HKLM\Software\Policies\Microsoft\Windows\WindowsUpdate
+     ```
+   - Ran:
+     ```powershell
+     wuauclt /resetauthorization /detectnow
+     wuauclt /reportnow
+     ```
+   - Checked client reporting in WSUS console
+
+---
+
+## 🔧 Troubleshooting
+- **Issue**: Client not appearing in WSUS console  
+  **Fix**: Added firewall rule for port `8530` in NSG and Windows firewall, forced client to re-register.
+
+- **Issue**: DNS resolution failure  
+  **Fix**: Configured static DNS to point to DC IP.
+
+---
+
+## 📜 Sample Script
+
+```powershell
+# Force WSUS client to re-register and report
+wuauclt /resetauthorization /detectnow
+wuauclt /reportnow
+gpupdate /force
